@@ -1,0 +1,268 @@
+// Beerware license. Vladislav Aleinik 2021
+//===================================================================
+// Multithreaded Programming
+// Lab#02: Spin-lock Benchmarking
+//===================================================================
+// Benchmark #1: Correctness
+// P threads collectively increment a variable N times in a critical
+// section governed by spinlock. Test shows, whether the resulting
+// sum is equal to the theoretical value P*N.
+//-------------------------------------------------------------------
+// Benchmark #2: Perfomance
+// P threads perform a handful of lock acuisitions for an average
+// time Ta. Plot Ta(P) is the output.
+//-------------------------------------------------------------------
+// Benchmark #3: Fairness
+// P threads perform a handful of lock acuisitions for some job.
+// Each lock acquisition time is measured. Maximum lock acquisition
+// time Tm is computed. Plot Tm(P) is the output.
+//-------------------------------------------------------------------
+#ifndef SPIN_LOCK_BENCHMARKS_HPP_INCLUDED
+#define SPIN_LOCK_BENCHMARKS_HPP_INCLUDED
+
+#include <stdlib.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <pthread.h>
+#include <time.h>
+
+//----------------------
+// Benchmark properties 
+//----------------------
+
+const int  MAX_THREADS = 512; 
+
+const long CORRECTNESS_TEST_NUM_LOCK_ACQISITIONS = 100;
+const long CORRECTNESS_TEST_NUMBER_OF_CYCLES     = 100;
+
+const long PERFORMANCE_TEST_NUM_LOCK_ACQISITIONS = 10000;
+const long PERFORMANCE_TEST_NUMBER_OF_CYCLES     = 100;
+
+const long FAIRNESS_TEST_NUM_LOCK_ACQISITIONS = 10000;
+const long FAIRNESS_TEST_NUMBER_OF_CYCLES     = 100;
+
+//---------------
+// Miscellaneous 
+//---------------
+
+// Bring color to one's life:
+#define RED     "\033[1;31m"
+#define GREEN   "\033[1;32m"
+#define YELLOW  "\033[1;33m"
+#define BLUE    "\033[1;34m"
+#define MAGENTA "\033[1;35m"
+#define CYAN    "\033[1;36m"
+#define WHITE   "\033[0;37m"
+#define RESET   "\033[0m"
+
+//------------------
+// Common benchmark 
+//------------------
+
+struct CommonTestArgs
+{
+	void (*acquire_lock)();
+	void (*release_lock)();
+
+	long num_lock_acuisitions;
+	long num_cycles_per_thread;
+
+	long long number_to_increment;
+};
+
+struct TestArgs
+{
+	struct CommonTestArgs* common;
+
+	pthread_t thread_id;
+
+	double thread_execution_time;
+};
+
+void* one_thread_job(void* args)
+{
+	struct TestArgs*       thread_args = args;
+	struct CommonTestArgs* common_args = thread_args->common;
+
+	// Measure start time:
+	struct timespec start;
+	if (clock_gettime(CLOCK_MONOTONIC, &start) == -1)
+	{
+		fprintf(stderr, MAGENTA"[Error] Unable to get real time\n"RESET);
+		exit(EXIT_FAILURE);
+	}
+
+	for (size_t acqisition = 0; acqisition < common_args->num_lock_acuisitions; ++acqisition)
+	{
+		common_args->acquire_lock();
+
+		for (size_t cycle = 0; cycle < common_args->num_cycles_per_thread; ++cycle)
+		{
+			common_args->number_to_increment += 1;
+		}
+
+		common_args->release_lock();
+	}
+
+	// Measure finish time:
+	struct timespec finish;
+	if (clock_gettime(CLOCK_MONOTONIC, &finish) == -1)
+	{
+		fprintf(stderr, MAGENTA"[Error] Unable to get real time\n"RESET);
+		exit(EXIT_FAILURE);
+	}
+
+	// Save thread execution time:
+	thread_args->thread_execution_time = 1.00 * (finish.tv_sec  - start.tv_sec ) + 
+	                                     1e-9 * (finish.tv_nsec - start.tv_nsec);
+
+	return NULL;
+}
+
+void run_test(void (*acquire_lock)(), void (*release_lock)(),
+              void (*printout_results)(struct CommonTestArgs*, struct TestArgs*, size_t),
+              size_t num_lock_acuisitions, size_t num_cycles_per_thread)
+{
+	struct CommonTestArgs common_args = 
+	{
+		.acquire_lock          = acquire_lock,
+		.release_lock          = release_lock,
+		.num_lock_acuisitions  = num_lock_acuisitions,
+		.num_cycles_per_thread = num_cycles_per_thread,
+		.number_to_increment   = 0
+	};
+
+	// Allocate memory for benchmark arguments:
+	struct TestArgs* arg_array = (struct TestArgs*) malloc(MAX_THREADS * sizeof(struct TestArgs));
+	if (arg_array == NULL)
+	{
+		fprintf(stderr, MAGENTA"[Error] Unable to get allocate memory\n"RESET);
+		exit(EXIT_FAILURE);
+	}
+
+	// Fill in the argument array:
+	for (size_t thread_i = 0; thread_i < MAX_THREADS; ++thread_i)
+	{
+		arg_array[thread_i].common = &common_args;
+	}
+
+	// Initialize thread arguments:
+	pthread_attr_t thread_attr;
+	if (pthread_attr_init(&thread_attr) != 0)
+	{
+		fprintf(stderr, MAGENTA"[Error] Unable to init thread attributes\n"RESET);
+		exit(EXIT_FAILURE);
+	}
+
+	for (size_t num_threads = 1; num_threads <= MAX_THREADS; num_threads *= 2)
+	{
+		// Update common_args:
+		common_args.number_to_increment = 0;
+
+		// Spawn threads:
+		for (size_t thread_i = 0; thread_i < num_threads; ++thread_i)
+		{
+			if (pthread_create(&arg_array[thread_i].thread_id, &thread_attr, one_thread_job, &arg_array[thread_i]) != 0)
+			{
+				fprintf(stderr, MAGENTA"[Error] Unable to create thread\n"RESET);
+				exit(EXIT_FAILURE);
+			}
+		}
+
+		// Join threads:
+		for (size_t thread_i = 0; thread_i < num_threads; ++thread_i)
+		{
+			if (pthread_join(arg_array[thread_i].thread_id, NULL) != 0)
+			{
+				fprintf(stderr, MAGENTA"[Error] Unable to join thread\n"RESET);
+				exit(EXIT_FAILURE);
+			}
+		}
+
+		// Printout test results:
+		printout_results(&common_args, arg_array, num_threads);
+	}
+
+	free(arg_array);
+}
+
+//---------------------------
+// Benchmark #1: Correctness 
+//---------------------------
+
+void correctness_test_printout(struct CommonTestArgs* common_args, struct TestArgs* arg_array, size_t num_threads)
+{
+	if (common_args->number_to_increment == num_threads *
+			common_args->num_lock_acuisitions * common_args->num_cycles_per_thread)
+	{
+		printf(YELLOW"The result for %4zu threads is "GREEN"CORRECT\n"RESET, num_threads);
+	}
+	else
+	{
+		printf(YELLOW"The result for %4zu threads is "RED"WRONG\n"RESET, num_threads);
+	}
+}
+
+void run_correctness_test(void (*acquire_lock)(), void (*release_lock)())
+{
+	run_test(acquire_lock, release_lock, correctness_test_printout, 
+	         CORRECTNESS_TEST_NUM_LOCK_ACQISITIONS,
+	         CORRECTNESS_TEST_NUMBER_OF_CYCLES);
+}
+
+//---------------------------
+// Benchmark #2: Performance 
+//---------------------------
+
+void performance_test_printout(struct CommonTestArgs* common_args, struct TestArgs* arg_array, size_t num_threads)
+{
+	// Accumulate results:
+	double average_time = 0.0;
+
+	for (size_t thread_i = 0; thread_i < num_threads; ++thread_i)
+	{
+		average_time += arg_array[thread_i].thread_execution_time;
+	}
+
+	average_time /= num_threads;
+
+	// Printout the result:
+	printf(YELLOW"%4zu %10f\n"RESET, num_threads, average_time);
+}
+
+void run_performance_test(void (*acquire_lock)(), void (*release_lock)())
+{
+	run_test(acquire_lock, release_lock, performance_test_printout, 
+	         PERFORMANCE_TEST_NUM_LOCK_ACQISITIONS,
+	         PERFORMANCE_TEST_NUMBER_OF_CYCLES);
+}
+
+//------------------------
+// Benchmark #1: Fairness 
+//------------------------
+
+void fairness_test_printout(struct CommonTestArgs* common_args, struct TestArgs* arg_array, size_t num_threads)
+{
+	// Accumulate results:
+	double max_time = 0.0;
+
+	for (size_t thread_i = 0; thread_i < num_threads; ++thread_i)
+	{
+		if (max_time < arg_array[thread_i].thread_execution_time)
+		{
+			max_time = arg_array[thread_i].thread_execution_time;
+		}
+	}
+
+	// Printout the result:
+	printf(YELLOW"%4zu %10f\n"RESET, num_threads, max_time);
+}
+
+void run_fairness_test(void (*acquire_lock)(), void (*release_lock)())
+{
+	run_test(acquire_lock, release_lock, fairness_test_printout, 
+	         FAIRNESS_TEST_NUM_LOCK_ACQISITIONS,
+	         FAIRNESS_TEST_NUMBER_OF_CYCLES);
+}
+
+#endif // SPIN_LOCK_BENCHMARKS_HPP_INCLUDED

@@ -299,9 +299,9 @@ int main(int argc, char* argv[])
 
 	struct Matrix m_a, m_b, m_c;
 
-	create_matrix(&m_a, 1024, 1024);
-	create_matrix(&m_b, 1024, 1024);
-	create_matrix(&m_c, 1024, 1024);
+	create_matrix(&m_a, 512, 512);
+	create_matrix(&m_b, 512, 512);
+	create_matrix(&m_c, 512, 512);
 
 	fill_lower_triangle(&m_a);
 	fill_upper_triangle(&m_b);

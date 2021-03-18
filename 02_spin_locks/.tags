@@ -1,0 +1,135 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+BLUE	SpinLockBenchmarks.h	37;"	d
+CORRECTNESS_TEST_NUMBER_OF_CYCLES	SpinLockBenchmarks.h	/^const long CORRECTNESS_TEST_NUMBER_OF_CYCLES     = 10000;$/;"	v
+CORRECTNESS_TEST_NUMBER_OF_CYCLES	spin_lock_test.asm	/^CORRECTNESS_TEST_NUMBER_OF_CYCLES:$/;"	l
+CORRECTNESS_TEST_NUM_LOCK_ACQISITIONS	SpinLockBenchmarks.h	/^const long CORRECTNESS_TEST_NUM_LOCK_ACQISITIONS = 1000;$/;"	v
+CORRECTNESS_TEST_NUM_LOCK_ACQISITIONS	spin_lock_test.asm	/^CORRECTNESS_TEST_NUM_LOCK_ACQISITIONS:$/;"	l
+CYAN	SpinLockBenchmarks.h	39;"	d
+CommonTestArgs	SpinLockBenchmarks.h	/^struct CommonTestArgs$/;"	s
+FAIRNESS_TEST_NUMBER_OF_CYCLES	SpinLockBenchmarks.h	/^const long FAIRNESS_TEST_NUMBER_OF_CYCLES     = 1000;	$/;"	v
+FAIRNESS_TEST_NUMBER_OF_CYCLES	spin_lock_test.asm	/^FAIRNESS_TEST_NUMBER_OF_CYCLES:$/;"	l
+FAIRNESS_TEST_NUM_LOCK_ACQISITIONS	SpinLockBenchmarks.h	/^const long FAIRNESS_TEST_NUM_LOCK_ACQISITIONS = 1;$/;"	v
+FAIRNESS_TEST_NUM_LOCK_ACQISITIONS	spin_lock_test.asm	/^FAIRNESS_TEST_NUM_LOCK_ACQISITIONS:$/;"	l
+GREEN	SpinLockBenchmarks.h	35;"	d
+LOCK_ACQUIRES	spin_lock_test.asm	/^LOCK_ACQUIRES:$/;"	l
+LOCK_ACQUIRES	spin_lock_test.c	/^void (*LOCK_ACQUIRES[NUM_LOCKS])() = $/;"	v
+LOCK_INITS	spin_lock_test.asm	/^LOCK_INITS:$/;"	l
+LOCK_INITS	spin_lock_test.c	/^void (*LOCK_INITS[NUM_LOCKS])() = $/;"	v
+LOCK_NAMES	spin_lock_test.asm	/^LOCK_NAMES:$/;"	l
+LOCK_NAMES	spin_lock_test.c	/^char* LOCK_NAMES[NUM_LOCKS] = $/;"	v
+LOCK_RELEASES	spin_lock_test.asm	/^LOCK_RELEASES:$/;"	l
+LOCK_RELEASES	spin_lock_test.c	/^void (*LOCK_RELEASES[NUM_LOCKS])() = $/;"	v
+MAGENTA	SpinLockBenchmarks.h	38;"	d
+MAX_THREADS	SpinLockBenchmarks.h	/^const int  MAX_THREADS = 1024; $/;"	v
+MAX_THREADS	spin_lock_test.asm	/^MAX_THREADS:$/;"	l
+NUM_LOCKS	spin_lock_test.c	82;"	d	file:
+PERFORMANCE_TEST_NUMBER_OF_CYCLES	SpinLockBenchmarks.h	/^const long PERFORMANCE_TEST_NUMBER_OF_CYCLES     = 100;$/;"	v
+PERFORMANCE_TEST_NUMBER_OF_CYCLES	spin_lock_test.asm	/^PERFORMANCE_TEST_NUMBER_OF_CYCLES:$/;"	l
+PERFORMANCE_TEST_NUM_LOCK_ACQISITIONS	SpinLockBenchmarks.h	/^const long PERFORMANCE_TEST_NUM_LOCK_ACQISITIONS = 10000;$/;"	v
+PERFORMANCE_TEST_NUM_LOCK_ACQISITIONS	spin_lock_test.asm	/^PERFORMANCE_TEST_NUM_LOCK_ACQISITIONS:$/;"	l
+RED	SpinLockBenchmarks.h	34;"	d
+RESET	SpinLockBenchmarks.h	41;"	d
+SPIN_LOCKS_HPP_INCLUDED	SpinLocks.h	7;"	d
+SPIN_LOCK_BENCHMARKS_HPP_INCLUDED	SpinLockBenchmarks.h	21;"	d
+TAS_CYCLES_TO_SPIN	SpinLocks.h	/^const unsigned TAS_CYCLES_TO_SPIN          =      100;$/;"	v
+TAS_CYCLES_TO_SPIN	spin_lock_test.asm	/^TAS_CYCLES_TO_SPIN:$/;"	l
+TAS_Lock	SpinLocks.h	/^struct TAS_Lock$/;"	s
+TAS_MAX_BACKOFF_NANOSECONDS	SpinLocks.h	/^const unsigned TAS_MAX_BACKOFF_NANOSECONDS = 25600000;$/;"	v
+TAS_MAX_BACKOFF_NANOSECONDS	spin_lock_test.asm	/^TAS_MAX_BACKOFF_NANOSECONDS:$/;"	l
+TAS_MIN_BACKOFF_NANOSECONDS	SpinLocks.h	/^const unsigned TAS_MIN_BACKOFF_NANOSECONDS =   100000;$/;"	v
+TAS_MIN_BACKOFF_NANOSECONDS	spin_lock_test.asm	/^TAS_MIN_BACKOFF_NANOSECONDS:$/;"	l
+TAS_acquire	SpinLocks.h	/^void TAS_acquire(struct TAS_Lock* lock)$/;"	f
+TAS_acquire	spin_lock_test.asm	/^TAS_acquire:$/;"	l
+TAS_init	SpinLocks.h	/^void TAS_init(struct TAS_Lock* lock)$/;"	f
+TAS_init	spin_lock_test.asm	/^TAS_init:$/;"	l
+TAS_release	SpinLocks.h	/^void TAS_release(struct TAS_Lock* lock)$/;"	f
+TAS_release	spin_lock_test.asm	/^TAS_release:$/;"	l
+TAS_test	spin_lock_test.c	/^struct TAS_Lock TAS_test;$/;"	v	typeref:struct:TAS_Lock
+TAS_test_acquire	spin_lock_test.asm	/^TAS_test_acquire:$/;"	l
+TAS_test_acquire	spin_lock_test.c	/^void TAS_test_acquire()$/;"	f
+TAS_test_init	spin_lock_test.asm	/^TAS_test_init:$/;"	l
+TAS_test_init	spin_lock_test.c	/^void TAS_test_init()$/;"	f
+TAS_test_release	spin_lock_test.asm	/^TAS_test_release:$/;"	l
+TAS_test_release	spin_lock_test.c	/^void TAS_test_release()$/;"	f
+TICKET_CYCLES_TO_SPIN	SpinLocks.h	/^const unsigned TICKET_CYCLES_TO_SPIN          =      100;$/;"	v
+TICKET_CYCLES_TO_SPIN	spin_lock_test.asm	/^TICKET_CYCLES_TO_SPIN:$/;"	l
+TICKET_MAX_BACKOFF_NANOSECONDS	SpinLocks.h	/^const unsigned TICKET_MAX_BACKOFF_NANOSECONDS = 25600000;$/;"	v
+TICKET_MAX_BACKOFF_NANOSECONDS	spin_lock_test.asm	/^TICKET_MAX_BACKOFF_NANOSECONDS:$/;"	l
+TICKET_MIN_BACKOFF_NANOSECONDS	SpinLocks.h	/^const unsigned TICKET_MIN_BACKOFF_NANOSECONDS =   100000;$/;"	v
+TICKET_MIN_BACKOFF_NANOSECONDS	spin_lock_test.asm	/^TICKET_MIN_BACKOFF_NANOSECONDS:$/;"	l
+TTAS_CYCLES_TO_SPIN	SpinLocks.h	/^const unsigned TTAS_CYCLES_TO_SPIN          =      100;$/;"	v
+TTAS_CYCLES_TO_SPIN	spin_lock_test.asm	/^TTAS_CYCLES_TO_SPIN:$/;"	l
+TTAS_Lock	SpinLocks.h	/^struct TTAS_Lock$/;"	s
+TTAS_MAX_BACKOFF_NANOSECONDS	SpinLocks.h	/^const unsigned TTAS_MAX_BACKOFF_NANOSECONDS = 25600000;$/;"	v
+TTAS_MAX_BACKOFF_NANOSECONDS	spin_lock_test.asm	/^TTAS_MAX_BACKOFF_NANOSECONDS:$/;"	l
+TTAS_MIN_BACKOFF_NANOSECONDS	SpinLocks.h	/^const unsigned TTAS_MIN_BACKOFF_NANOSECONDS =   100000;$/;"	v
+TTAS_MIN_BACKOFF_NANOSECONDS	spin_lock_test.asm	/^TTAS_MIN_BACKOFF_NANOSECONDS:$/;"	l
+TTAS_acquire	SpinLocks.h	/^void TTAS_acquire(struct TTAS_Lock* lock)$/;"	f
+TTAS_acquire	spin_lock_test.asm	/^TTAS_acquire:$/;"	l
+TTAS_init	SpinLocks.h	/^void TTAS_init(struct TTAS_Lock* lock)$/;"	f
+TTAS_init	spin_lock_test.asm	/^TTAS_init:$/;"	l
+TTAS_release	SpinLocks.h	/^void TTAS_release(struct TTAS_Lock* lock)$/;"	f
+TTAS_release	spin_lock_test.asm	/^TTAS_release:$/;"	l
+TTAS_test	spin_lock_test.c	/^struct TTAS_Lock TTAS_test;$/;"	v	typeref:struct:TTAS_Lock
+TTAS_test_acquire	spin_lock_test.asm	/^TTAS_test_acquire:$/;"	l
+TTAS_test_acquire	spin_lock_test.c	/^void TTAS_test_acquire()$/;"	f
+TTAS_test_init	spin_lock_test.asm	/^TTAS_test_init:$/;"	l
+TTAS_test_init	spin_lock_test.c	/^void TTAS_test_init()$/;"	f
+TTAS_test_release	spin_lock_test.asm	/^TTAS_test_release:$/;"	l
+TTAS_test_release	spin_lock_test.c	/^void TTAS_test_release()$/;"	f
+TestArgs	SpinLockBenchmarks.h	/^struct TestArgs$/;"	s
+TicketLock	SpinLocks.h	/^struct TicketLock$/;"	s
+TicketLock_acquire	SpinLocks.h	/^void TicketLock_acquire(struct TicketLock* lock)$/;"	f
+TicketLock_acquire	spin_lock_test.asm	/^TicketLock_acquire:$/;"	l
+TicketLock_init	SpinLocks.h	/^void TicketLock_init(struct TicketLock* lock)$/;"	f
+TicketLock_init	spin_lock_test.asm	/^TicketLock_init:$/;"	l
+TicketLock_release	SpinLocks.h	/^void TicketLock_release(struct TicketLock* lock)$/;"	f
+TicketLock_release	spin_lock_test.asm	/^TicketLock_release:$/;"	l
+WHITE	SpinLockBenchmarks.h	40;"	d
+YELLOW	SpinLockBenchmarks.h	36;"	d
+acquire_lock	SpinLockBenchmarks.h	/^	void (*acquire_lock)();$/;"	m	struct:CommonTestArgs
+common	SpinLockBenchmarks.h	/^	struct CommonTestArgs* common;$/;"	m	struct:TestArgs	typeref:struct:TestArgs::CommonTestArgs
+correctness_test_printout	SpinLockBenchmarks.h	/^void correctness_test_printout(struct CommonTestArgs* common_args, struct TestArgs* arg_array, size_t num_threads)$/;"	f
+correctness_test_printout	spin_lock_test.asm	/^correctness_test_printout:$/;"	l
+fairness_test_printout	SpinLockBenchmarks.h	/^void fairness_test_printout(struct CommonTestArgs* common_args, struct TestArgs* arg_array, size_t num_threads)$/;"	f
+fairness_test_printout	spin_lock_test.asm	/^fairness_test_printout:$/;"	l
+load_barrier	SpinLocks.h	14;"	d
+lock_taken	SpinLocks.h	/^	int lock_taken;$/;"	m	struct:TAS_Lock
+lock_taken	SpinLocks.h	/^	int lock_taken;$/;"	m	struct:TTAS_Lock
+main	spin_lock_test.asm	/^main:$/;"	l
+main	spin_lock_test.c	/^int main()$/;"	f
+memory_barrier	SpinLocks.h	13;"	d
+next_ticket	SpinLocks.h	/^	unsigned next_ticket;$/;"	m	struct:TicketLock
+now_serving	SpinLocks.h	/^	unsigned now_serving;$/;"	m	struct:TicketLock
+num_cycles_per_thread	SpinLockBenchmarks.h	/^	long num_cycles_per_thread;$/;"	m	struct:CommonTestArgs
+num_lock_acuisitions	SpinLockBenchmarks.h	/^	long num_lock_acuisitions;$/;"	m	struct:CommonTestArgs
+number_to_increment	SpinLockBenchmarks.h	/^	long long number_to_increment;$/;"	m	struct:CommonTestArgs
+one_thread_job	SpinLockBenchmarks.h	/^void* one_thread_job(void* args)$/;"	f
+one_thread_job	spin_lock_test.asm	/^one_thread_job:$/;"	l
+performance_test_printout	SpinLockBenchmarks.h	/^void performance_test_printout(struct CommonTestArgs* common_args, struct TestArgs* arg_array, size_t num_threads)$/;"	f
+performance_test_printout	spin_lock_test.asm	/^performance_test_printout:$/;"	l
+release_lock	SpinLockBenchmarks.h	/^	void (*release_lock)();$/;"	m	struct:CommonTestArgs
+run_correctness_test	SpinLockBenchmarks.h	/^void run_correctness_test(void (*acquire_lock)(), void (*release_lock)())$/;"	f
+run_correctness_test	spin_lock_test.asm	/^run_correctness_test:$/;"	l
+run_fairness_test	SpinLockBenchmarks.h	/^void run_fairness_test(void (*acquire_lock)(), void (*release_lock)())$/;"	f
+run_fairness_test	spin_lock_test.asm	/^run_fairness_test:$/;"	l
+run_performance_test	SpinLockBenchmarks.h	/^void run_performance_test(void (*acquire_lock)(), void (*release_lock)())$/;"	f
+run_performance_test	spin_lock_test.asm	/^run_performance_test:$/;"	l
+run_test	SpinLockBenchmarks.h	/^void run_test(void (*acquire_lock)(), void (*release_lock)(),$/;"	f
+run_test	spin_lock_test.asm	/^run_test:$/;"	l
+spinloop_pause	SpinLocks.h	17;"	d
+store_barrier	SpinLocks.h	15;"	d
+thread_execution_time	SpinLockBenchmarks.h	/^	double thread_execution_time;$/;"	m	struct:TestArgs
+thread_id	SpinLockBenchmarks.h	/^	pthread_t thread_id;$/;"	m	struct:TestArgs
+ticket_test	spin_lock_test.c	/^struct TicketLock ticket_test;$/;"	v	typeref:struct:TicketLock
+ticket_test_acquire	spin_lock_test.asm	/^ticket_test_acquire:$/;"	l
+ticket_test_acquire	spin_lock_test.c	/^void ticket_test_acquire()$/;"	f
+ticket_test_init	spin_lock_test.asm	/^ticket_test_init:$/;"	l
+ticket_test_init	spin_lock_test.c	/^void ticket_test_init()$/;"	f
+ticket_test_release	spin_lock_test.asm	/^ticket_test_release:$/;"	l
+ticket_test_release	spin_lock_test.c	/^void ticket_test_release()$/;"	f
