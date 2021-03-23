@@ -30,15 +30,19 @@
 // Benchmark properties 
 //----------------------
 
-const int  MAX_THREADS = 512; 
+const int MAX_THREADS = 100; 
+const int THREAD_STEP =  10; 
 
+const long CORRECTNESS_TEST_NUM_REPEATS          = 1;
 const long CORRECTNESS_TEST_NUM_LOCK_ACQISITIONS = 100;
-const long CORRECTNESS_TEST_NUMBER_OF_CYCLES     = 100;
+const long CORRECTNESS_TEST_NUMBER_OF_CYCLES     = 10;
 
-const long PERFORMANCE_TEST_NUM_LOCK_ACQISITIONS = 10000;
-const long PERFORMANCE_TEST_NUMBER_OF_CYCLES     = 100;
+const long PERFORMANCE_TEST_NUM_REPEATS          = 1;
+const long PERFORMANCE_TEST_NUM_LOCK_ACQISITIONS = 1000;
+const long PERFORMANCE_TEST_NUMBER_OF_CYCLES     = 0;
 
-const long FAIRNESS_TEST_NUM_LOCK_ACQISITIONS = 10000;
+const long FAIRNESS_TEST_NUM_REPEATS          = 100;
+const long FAIRNESS_TEST_NUM_LOCK_ACQISITIONS = 1;
 const long FAIRNESS_TEST_NUMBER_OF_CYCLES     = 100;
 
 //---------------
@@ -66,6 +70,7 @@ struct CommonTestArgs
 
 	long num_lock_acuisitions;
 	long num_cycles_per_thread;
+	unsigned num_runs;
 
 	long long number_to_increment;
 };
@@ -113,15 +118,18 @@ void* one_thread_job(void* args)
 	}
 
 	// Save thread execution time:
-	thread_args->thread_execution_time = 1.00 * (finish.tv_sec  - start.tv_sec ) + 
-	                                     1e-9 * (finish.tv_nsec - start.tv_nsec);
+	double new_thread_execution_time = 1.00 * (finish.tv_sec  - start.tv_sec ) + 
+	                                   1e-9 * (finish.tv_nsec - start.tv_nsec);
+
+	if (thread_args->thread_execution_time < new_thread_execution_time)
+		thread_args->thread_execution_time = new_thread_execution_time;
 
 	return NULL;
 }
 
 void run_test(void (*acquire_lock)(), void (*release_lock)(),
               void (*printout_results)(struct CommonTestArgs*, struct TestArgs*, size_t),
-              size_t num_lock_acuisitions, size_t num_cycles_per_thread)
+              size_t num_lock_acuisitions, size_t num_cycles_per_thread, size_t num_runs)
 {
 	struct CommonTestArgs common_args = 
 	{
@@ -129,6 +137,7 @@ void run_test(void (*acquire_lock)(), void (*release_lock)(),
 		.release_lock          = release_lock,
 		.num_lock_acuisitions  = num_lock_acuisitions,
 		.num_cycles_per_thread = num_cycles_per_thread,
+		.num_runs              = num_runs,
 		.number_to_increment   = 0
 	};
 
@@ -144,6 +153,7 @@ void run_test(void (*acquire_lock)(), void (*release_lock)(),
 	for (size_t thread_i = 0; thread_i < MAX_THREADS; ++thread_i)
 	{
 		arg_array[thread_i].common = &common_args;
+		arg_array[thread_i].thread_execution_time = 0.0;
 	}
 
 	// Initialize thread arguments:
@@ -154,28 +164,31 @@ void run_test(void (*acquire_lock)(), void (*release_lock)(),
 		exit(EXIT_FAILURE);
 	}
 
-	for (size_t num_threads = 1; num_threads <= MAX_THREADS; num_threads *= 2)
+	for (size_t num_threads = THREAD_STEP; num_threads <= MAX_THREADS; num_threads += THREAD_STEP)
 	{
-		// Update common_args:
-		common_args.number_to_increment = 0;
-
-		// Spawn threads:
-		for (size_t thread_i = 0; thread_i < num_threads; ++thread_i)
+		for (size_t run = 0; run < num_runs; ++run)
 		{
-			if (pthread_create(&arg_array[thread_i].thread_id, &thread_attr, one_thread_job, &arg_array[thread_i]) != 0)
+			// Update common_args:
+			common_args.number_to_increment = 0;
+
+			// Spawn threads:
+			for (size_t thread_i = 0; thread_i < num_threads; ++thread_i)
 			{
-				fprintf(stderr, MAGENTA"[Error] Unable to create thread\n"RESET);
-				exit(EXIT_FAILURE);
+				if (pthread_create(&arg_array[thread_i].thread_id, &thread_attr, one_thread_job, &arg_array[thread_i]) != 0)
+				{
+					fprintf(stderr, MAGENTA"[Error] Unable to create thread\n"RESET);
+					exit(EXIT_FAILURE);
+				}
 			}
-		}
 
-		// Join threads:
-		for (size_t thread_i = 0; thread_i < num_threads; ++thread_i)
-		{
-			if (pthread_join(arg_array[thread_i].thread_id, NULL) != 0)
+			// Join threads:
+			for (size_t thread_i = 0; thread_i < num_threads; ++thread_i)
 			{
-				fprintf(stderr, MAGENTA"[Error] Unable to join thread\n"RESET);
-				exit(EXIT_FAILURE);
+				if (pthread_join(arg_array[thread_i].thread_id, NULL) != 0)
+				{
+					fprintf(stderr, MAGENTA"[Error] Unable to join thread\n"RESET);
+					exit(EXIT_FAILURE);
+				}
 			}
 		}
 
@@ -207,7 +220,8 @@ void run_correctness_test(void (*acquire_lock)(), void (*release_lock)())
 {
 	run_test(acquire_lock, release_lock, correctness_test_printout, 
 	         CORRECTNESS_TEST_NUM_LOCK_ACQISITIONS,
-	         CORRECTNESS_TEST_NUMBER_OF_CYCLES);
+	         CORRECTNESS_TEST_NUMBER_OF_CYCLES,
+	         CORRECTNESS_TEST_NUM_REPEATS);
 }
 
 //---------------------------
@@ -234,7 +248,8 @@ void run_performance_test(void (*acquire_lock)(), void (*release_lock)())
 {
 	run_test(acquire_lock, release_lock, performance_test_printout, 
 	         PERFORMANCE_TEST_NUM_LOCK_ACQISITIONS,
-	         PERFORMANCE_TEST_NUMBER_OF_CYCLES);
+	         PERFORMANCE_TEST_NUMBER_OF_CYCLES,
+	         PERFORMANCE_TEST_NUM_REPEATS);
 }
 
 //------------------------
@@ -262,7 +277,8 @@ void run_fairness_test(void (*acquire_lock)(), void (*release_lock)())
 {
 	run_test(acquire_lock, release_lock, fairness_test_printout, 
 	         FAIRNESS_TEST_NUM_LOCK_ACQISITIONS,
-	         FAIRNESS_TEST_NUMBER_OF_CYCLES);
+	         FAIRNESS_TEST_NUMBER_OF_CYCLES,
+	         FAIRNESS_TEST_NUM_REPEATS);
 }
 
 #endif // SPIN_LOCK_BENCHMARKS_HPP_INCLUDED
