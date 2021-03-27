@@ -39,11 +39,11 @@ const long CORRECTNESS_TEST_NUMBER_OF_CYCLES     = 10;
 
 const long PERFORMANCE_TEST_NUM_REPEATS          = 1;
 const long PERFORMANCE_TEST_NUM_LOCK_ACQISITIONS = 1000;
-const long PERFORMANCE_TEST_NUMBER_OF_CYCLES     = 0;
+const long PERFORMANCE_TEST_NUMBER_OF_CYCLES     = 100;
 
 const long FAIRNESS_TEST_NUM_REPEATS          = 100;
 const long FAIRNESS_TEST_NUM_LOCK_ACQISITIONS = 1;
-const long FAIRNESS_TEST_NUMBER_OF_CYCLES     = 100;
+const long FAIRNESS_TEST_NUMBER_OF_CYCLES     = 1000;
 
 //---------------
 // Miscellaneous 
@@ -164,7 +164,7 @@ void run_test(void (*acquire_lock)(), void (*release_lock)(),
 		exit(EXIT_FAILURE);
 	}
 
-	for (size_t num_threads = THREAD_STEP; num_threads <= MAX_THREADS; num_threads += THREAD_STEP)
+	for (size_t num_threads = THREAD_STEP; num_threads < MAX_THREADS; num_threads += THREAD_STEP)
 	{
 		for (size_t run = 0; run < num_runs; ++run)
 		{
@@ -174,6 +174,8 @@ void run_test(void (*acquire_lock)(), void (*release_lock)(),
 			// Spawn threads:
 			for (size_t thread_i = 0; thread_i < num_threads; ++thread_i)
 			{
+				arg_array[thread_i].thread_execution_time = 0.0;
+				
 				if (pthread_create(&arg_array[thread_i].thread_id, &thread_attr, one_thread_job, &arg_array[thread_i]) != 0)
 				{
 					fprintf(stderr, MAGENTA"[Error] Unable to create thread\n"RESET);

@@ -7,6 +7,8 @@
 #define SPIN_LOCKS_HPP_INCLUDED
 
 #include <stdlib.h>
+#include <stdint.h>
+#include <immintrin.h>
 
 //------------------
 // Asm instructions 
@@ -32,7 +34,7 @@ const unsigned TAS_MAX_BACKOFF_NANOSECONDS = 64000;
 
 struct TAS_Lock
 {
-	int lock_taken;
+	volatile char lock_taken;
 };
 
 void TAS_init(struct TAS_Lock* lock)
@@ -44,7 +46,7 @@ void TAS_acquire(struct TAS_Lock* lock)
 {
 	unsigned backoff_sleep = TAS_MIN_BACKOFF_NANOSECONDS;
 
-	for (unsigned cycle_no = 0; __sync_lock_test_and_set(&lock->lock_taken, 1); ++cycle_no)
+	for (unsigned cycle_no = 0; __atomic_test_and_set(&lock->lock_taken, __ATOMIC_ACQUIRE); ++cycle_no)
 	{
 		spinloop_pause();
 
@@ -64,14 +66,11 @@ void TAS_acquire(struct TAS_Lock* lock)
 	}
 
 	backoff_sleep = TAS_MIN_BACKOFF_NANOSECONDS;
-
-	// __sync_lock_test_and_set has an implicit ACQUIRE memory-barrier
 }
 
 void TAS_release(struct TAS_Lock* lock)
 {
-	// __sync_lock_release has an implicit RELEASE memory-barrier
-	__sync_lock_release(&lock->lock_taken);
+	__atomic_clear(&lock->lock_taken, __ATOMIC_RELEASE);
 }
 
 //------------------------------------------------------------------
@@ -89,7 +88,7 @@ const unsigned TTAS_MAX_BACKOFF_NANOSECONDS = 64000;
 
 struct TTAS_Lock
 {
-	int lock_taken;
+	volatile char lock_taken;
 };
 
 void TTAS_init(struct TTAS_Lock* lock)
@@ -125,14 +124,13 @@ void TTAS_acquire(struct TTAS_Lock* lock)
 			continue;
 		}
 
-		if (!__sync_lock_test_and_set(&lock->lock_taken, 1)) return;
+		if (!__atomic_test_and_set(&lock->lock_taken, __ATOMIC_ACQUIRE)) return;
 	}
 }
 
 void TTAS_release(struct TTAS_Lock* lock)
 {
-	// __sync_lock_release has an implicit RELEASE memory-barrier
-	__sync_lock_release(&lock->lock_taken);
+	__atomic_clear(&lock->lock_taken, __ATOMIC_RELEASE);
 }
 
 //------------------------------------------------------------------
@@ -141,17 +139,15 @@ void TTAS_release(struct TTAS_Lock* lock)
 // Optimizations:
 // - Better fairness
 // - Assembler "pause" instruction for power-effective busy-waiting
-// - Exponential backoff strategy
+// - Schedule the next thread if the lock is taken
 //------------------------------------------------------------------
 
-const unsigned TICKET_CYCLES_TO_SPIN          =   100;
-const unsigned TICKET_MIN_BACKOFF_NANOSECONDS =  2000;
-const unsigned TICKET_MAX_BACKOFF_NANOSECONDS = 32000;
+const unsigned TICKET_CYCLES_TO_SPIN = 100;
 
 struct TicketLock
 {
-	unsigned next_ticket;
-	unsigned now_serving;
+	volatile unsigned next_ticket;
+	volatile unsigned now_serving;
 };
 
 void TicketLock_init(struct TicketLock* lock)
@@ -163,51 +159,25 @@ void TicketLock_init(struct TicketLock* lock)
 void TicketLock_acquire(struct TicketLock* lock)
 {
 	// Acquire a ticket in a queue:
-	const unsigned ticket = __sync_fetch_and_add(&lock->next_ticket, 1);
-
-	// __sync_fetch_and_add does impose any store/load ordering
-	// So we don't need any other ACQUIRE memory barrier. 
-
-	unsigned backoff_sleep = TICKET_MIN_BACKOFF_NANOSECONDS;
+	const unsigned ticket = __atomic_fetch_add(&lock->next_ticket, 1, __ATOMIC_RELAXED);
 
 	// Initial spin-loop waiting for our time to be served:
-	for (unsigned cycle_no = 0; lock->now_serving != ticket && cycle_no < TICKET_CYCLES_TO_SPIN; ++cycle_no)
+	for (unsigned cycle_no = 0; __atomic_fetch_add(&lock->now_serving, 0, __ATOMIC_ACQUIRE) != ticket
+	                            && cycle_no < TICKET_CYCLES_TO_SPIN; ++cycle_no)
 	{
 		spinloop_pause();
 	}
 
-	// Perform exponential backoff:
-	while (1)
+	// Keep scheduling the next thread if the lock is taken:
+	while (__atomic_load_n(&lock->now_serving, __ATOMIC_ACQUIRE) != ticket)
 	{
-		if (lock->now_serving != ticket)
-		{
-			struct timespec to_sleep = {
-				.tv_sec  = 0,
-				.tv_nsec = backoff_sleep
-			};
-
-			if (backoff_sleep < TICKET_MAX_BACKOFF_NANOSECONDS) backoff_sleep *= 2;
-
-			// No value-checking, because it doesn't affect correctness:
-			nanosleep(&to_sleep, NULL);
-
-			continue;
-		}
-		else return;
+		sched_yield();
 	}
 }
 
 void TicketLock_release(struct TicketLock* lock)
 {
-	// There is no store/load ordering imposed around the critical section yet.
-	// So we need an ACQUIRE memory barrier. A total memory barrier will do:
-	memory_barrier();
-
-	lock->now_serving += 1;
-
-	// Flush the store buffer in order to other CPU to notice the lock release:
-	store_barrier();
+	__atomic_store_n(&lock->now_serving, lock->now_serving + 1, __ATOMIC_RELEASE);
 }
-
 
 #endif // SPIN_LOCKS_HPP_INCLUDED
