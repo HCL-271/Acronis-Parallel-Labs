@@ -54,10 +54,10 @@ const long FAIRNESS_TEST_NUMBER_OF_CYCLES     = 1000;
 #define GREEN   "\033[1;32m"
 #define YELLOW  "\033[1;33m"
 #define BLUE    "\033[1;34m"
-#define MAGENTA "\033[1;35m"
+#define MAGENTA  "\033[1;35m"
 #define CYAN    "\033[1;36m"
 #define WHITE   "\033[0;37m"
-#define RESET   "\033[0m"
+#define  RESET   "\033[0m"
 
 //------------------
 // Common benchmark 
@@ -68,11 +68,11 @@ struct CommonTestArgs
 	void (*acquire_lock)();
 	void (*release_lock)();
 
-	long num_lock_acuisitions;
-	long num_cycles_per_thread;
+	unsigned num_lock_acuisitions;
+	unsigned num_cycles_per_thread;
 	unsigned num_runs;
 
-	long long number_to_increment;
+	unsigned long number_to_increment;
 };
 
 struct TestArgs
@@ -86,14 +86,14 @@ struct TestArgs
 
 void* one_thread_job(void* args)
 {
-	struct TestArgs*       thread_args = args;
-	struct CommonTestArgs* common_args = thread_args->common;
+	struct TestArgs*       thread_args = (struct TestArgs*) args;
+	struct CommonTestArgs* common_args = (struct CommonTestArgs*) thread_args->common;
 
 	// Measure start time:
 	struct timespec start;
 	if (clock_gettime(CLOCK_MONOTONIC, &start) == -1)
 	{
-		fprintf(stderr, MAGENTA"[Error] Unable to get real time\n"RESET);
+		fprintf(stderr, MAGENTA  "[Error] Unable to get real time\n" RESET);
 		exit(EXIT_FAILURE);
 	}
 
@@ -101,6 +101,7 @@ void* one_thread_job(void* args)
 	{
 		common_args->acquire_lock();
 
+		// Critical section:
 		for (size_t cycle = 0; cycle < common_args->num_cycles_per_thread; ++cycle)
 		{
 			common_args->number_to_increment += 1;
@@ -113,7 +114,7 @@ void* one_thread_job(void* args)
 	struct timespec finish;
 	if (clock_gettime(CLOCK_MONOTONIC, &finish) == -1)
 	{
-		fprintf(stderr, MAGENTA"[Error] Unable to get real time\n"RESET);
+		fprintf(stderr, MAGENTA "[Error] Unable to get real time\n" RESET);
 		exit(EXIT_FAILURE);
 	}
 
@@ -129,7 +130,7 @@ void* one_thread_job(void* args)
 
 void run_test(void (*acquire_lock)(), void (*release_lock)(),
               void (*printout_results)(struct CommonTestArgs*, struct TestArgs*, size_t),
-              size_t num_lock_acuisitions, size_t num_cycles_per_thread, size_t num_runs)
+              unsigned num_lock_acuisitions, unsigned num_cycles_per_thread, unsigned num_runs)
 {
 	struct CommonTestArgs common_args = 
 	{
@@ -145,7 +146,7 @@ void run_test(void (*acquire_lock)(), void (*release_lock)(),
 	struct TestArgs* arg_array = (struct TestArgs*) malloc(MAX_THREADS * sizeof(struct TestArgs));
 	if (arg_array == NULL)
 	{
-		fprintf(stderr, MAGENTA"[Error] Unable to get allocate memory\n"RESET);
+		fprintf(stderr, MAGENTA "[Error] Unable to get allocate memory\n" RESET);
 		exit(EXIT_FAILURE);
 	}
 
@@ -160,7 +161,7 @@ void run_test(void (*acquire_lock)(), void (*release_lock)(),
 	pthread_attr_t thread_attr;
 	if (pthread_attr_init(&thread_attr) != 0)
 	{
-		fprintf(stderr, MAGENTA"[Error] Unable to init thread attributes\n"RESET);
+		fprintf(stderr, MAGENTA "[Error] Unable to init thread attributes\n" RESET);
 		exit(EXIT_FAILURE);
 	}
 
@@ -178,7 +179,7 @@ void run_test(void (*acquire_lock)(), void (*release_lock)(),
 				
 				if (pthread_create(&arg_array[thread_i].thread_id, &thread_attr, one_thread_job, &arg_array[thread_i]) != 0)
 				{
-					fprintf(stderr, MAGENTA"[Error] Unable to create thread\n"RESET);
+					fprintf(stderr, MAGENTA "[Error] Unable to create thread\n" RESET);
 					exit(EXIT_FAILURE);
 				}
 			}
@@ -188,7 +189,7 @@ void run_test(void (*acquire_lock)(), void (*release_lock)(),
 			{
 				if (pthread_join(arg_array[thread_i].thread_id, NULL) != 0)
 				{
-					fprintf(stderr, MAGENTA"[Error] Unable to join thread\n"RESET);
+					fprintf(stderr, MAGENTA "[Error] Unable to join thread\n" RESET);
 					exit(EXIT_FAILURE);
 				}
 			}
@@ -210,11 +211,11 @@ void correctness_test_printout(struct CommonTestArgs* common_args, struct TestAr
 	if (common_args->number_to_increment == num_threads *
 			common_args->num_lock_acuisitions * common_args->num_cycles_per_thread)
 	{
-		printf(YELLOW"The result for %4zu threads is "GREEN"CORRECT\n"RESET, num_threads);
+		printf(YELLOW "The result for %4zu threads is " GREEN "CORRECT\n" RESET, num_threads);
 	}
 	else
 	{
-		printf(YELLOW"The result for %4zu threads is "RED"WRONG\n"RESET, num_threads);
+		printf(YELLOW "The result for %4zu threads is " RED "WRONG\n" RESET, num_threads);
 	}
 }
 
@@ -232,7 +233,7 @@ void run_correctness_test(void (*acquire_lock)(), void (*release_lock)())
 
 void performance_test_printout(struct CommonTestArgs* common_args, struct TestArgs* arg_array, size_t num_threads)
 {
-	// Accumulate results:
+	// Calculate average thread execution time:
 	double average_time = 0.0;
 
 	for (size_t thread_i = 0; thread_i < num_threads; ++thread_i)
@@ -243,7 +244,7 @@ void performance_test_printout(struct CommonTestArgs* common_args, struct TestAr
 	average_time /= num_threads;
 
 	// Printout the result:
-	printf(YELLOW"%4zu %10f\n"RESET, num_threads, average_time);
+	printf(YELLOW "%4zu %10f\n" RESET, num_threads, average_time);
 }
 
 void run_performance_test(void (*acquire_lock)(), void (*release_lock)())
@@ -260,7 +261,7 @@ void run_performance_test(void (*acquire_lock)(), void (*release_lock)())
 
 void fairness_test_printout(struct CommonTestArgs* common_args, struct TestArgs* arg_array, size_t num_threads)
 {
-	// Accumulate results:
+	// Calculate maximum thread execution time:
 	double max_time = 0.0;
 
 	for (size_t thread_i = 0; thread_i < num_threads; ++thread_i)
@@ -272,7 +273,7 @@ void fairness_test_printout(struct CommonTestArgs* common_args, struct TestArgs*
 	}
 
 	// Printout the result:
-	printf(YELLOW"%4zu %10f\n"RESET, num_threads, max_time);
+	printf(YELLOW "%4zu %10f\n" RESET, num_threads, max_time);
 }
 
 void run_fairness_test(void (*acquire_lock)(), void (*release_lock)())

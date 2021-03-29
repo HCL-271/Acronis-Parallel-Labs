@@ -106,7 +106,7 @@ void TTAS_acquire(struct TTAS_Lock* lock)
 		spinloop_pause();
 	}
 
-	// Then, perform exponential backoff:
+	// Perform exponential backoff:
 	while (1)
 	{
 		if (lock->lock_taken)
@@ -137,7 +137,7 @@ void TTAS_release(struct TTAS_Lock* lock)
 // Ticket lock 
 //------------------------------------------------------------------
 // Optimizations:
-// - Better fairness
+// - First-in first-out fairness
 // - Assembler "pause" instruction for power-effective busy-waiting
 // - Schedule the next thread if the lock is taken
 //------------------------------------------------------------------
@@ -146,8 +146,8 @@ const unsigned TICKET_CYCLES_TO_SPIN = 100;
 
 struct TicketLock
 {
-	volatile unsigned next_ticket;
-	volatile unsigned now_serving;
+	volatile short next_ticket;
+	volatile short now_serving;
 };
 
 void TicketLock_init(struct TicketLock* lock)
@@ -159,7 +159,7 @@ void TicketLock_init(struct TicketLock* lock)
 void TicketLock_acquire(struct TicketLock* lock)
 {
 	// Acquire a ticket in a queue:
-	const unsigned ticket = __atomic_fetch_add(&lock->next_ticket, 1, __ATOMIC_RELAXED);
+	const short ticket = __atomic_fetch_add(&lock->next_ticket, 1, __ATOMIC_RELAXED);
 
 	// Initial spin-loop waiting for our time to be served:
 	for (unsigned cycle_no = 0; __atomic_fetch_add(&lock->now_serving, 0, __ATOMIC_ACQUIRE) != ticket

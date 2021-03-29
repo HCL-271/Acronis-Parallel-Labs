@@ -81,7 +81,7 @@ void ticket_test_release()
 
 #define NUM_LOCKS 3
 
-char* LOCK_NAMES[NUM_LOCKS] = 
+const char* LOCK_NAMES[NUM_LOCKS] = 
 {
 	"Ticket lock",
 	"TAS lock",
@@ -117,17 +117,17 @@ int main()
 		LOCK_INITS[lock_i]();
 
 		// Correctness:
-		printf(CYAN"%s correctness test:\n"RESET, LOCK_NAMES[lock_i]);
+		printf(CYAN "%s correctness test:\n" RESET, LOCK_NAMES[lock_i]);
 
 		run_correctness_test(LOCK_ACQUIRES[lock_i], LOCK_RELEASES[lock_i]);
 
 		// Performance:
-		printf(CYAN"%s performance test:\n"RESET, LOCK_NAMES[lock_i]);
+		printf(CYAN "%s performance test:\n" RESET, LOCK_NAMES[lock_i]);
 
 		run_performance_test(LOCK_ACQUIRES[lock_i], LOCK_RELEASES[lock_i]);
 		
 		// Fairness:
-		printf(CYAN"%s fairness test:\n"RESET, LOCK_NAMES[lock_i]);
+		printf(CYAN "%s fairness test:\n" RESET, LOCK_NAMES[lock_i]);
 
 		run_fairness_test(LOCK_ACQUIRES[lock_i], LOCK_RELEASES[lock_i]);
 	}
