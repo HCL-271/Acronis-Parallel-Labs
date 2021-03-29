@@ -148,6 +148,7 @@ struct TicketLock
 {
 	volatile short next_ticket;
 	volatile short now_serving;
+	volatile char lock_taken;
 };
 
 void TicketLock_init(struct TicketLock* lock)
@@ -161,14 +162,12 @@ void TicketLock_acquire(struct TicketLock* lock)
 	// Acquire a ticket in a queue:
 	const short ticket = __atomic_fetch_add(&lock->next_ticket, 1, __ATOMIC_RELAXED);
 
-	// Initial spin-loop waiting for our time to be served:
-	for (unsigned cycle_no = 0; __atomic_fetch_add(&lock->now_serving, 0, __ATOMIC_ACQUIRE) != ticket
-	                            && cycle_no < TICKET_CYCLES_TO_SPIN; ++cycle_no)
+	// On start spin-loop waiting for the lock to be released:
+	for (unsigned cycle_no = 0; lock->now_serving != ticket && cycle_no < TTAS_CYCLES_TO_SPIN; ++cycle_no)
 	{
 		spinloop_pause();
 	}
 
-	// Keep scheduling the next thread if the lock is taken:
 	while (__atomic_load_n(&lock->now_serving, __ATOMIC_ACQUIRE) != ticket)
 	{
 		sched_yield();
@@ -177,7 +176,7 @@ void TicketLock_acquire(struct TicketLock* lock)
 
 void TicketLock_release(struct TicketLock* lock)
 {
-	__atomic_store_n(&lock->now_serving, lock->now_serving + 1, __ATOMIC_RELEASE);
+	__atomic_fetch_add(&lock->now_serving, 1, __ATOMIC_RELEASE);
 }
 
 #endif // SPIN_LOCKS_HPP_INCLUDED
