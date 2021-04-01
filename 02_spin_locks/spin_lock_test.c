@@ -9,6 +9,9 @@
 //@ Include your header here: 
 #include "SpinLocks.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+
 //-----------
 // TAS lock 
 //-----------

@@ -1,2 +1,4 @@
 ToDo.txt
 */.tags
+*.o
+*.asm
