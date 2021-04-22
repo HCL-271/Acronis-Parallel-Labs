@@ -74,7 +74,7 @@ void TTAS_acquire(struct TTAS_Lock* lock)
 	unsigned backoff_sleep = TTAS_MIN_BACKOFF_NANOSECONDS;
 
 	// On start spin-loop waiting for the lock to be released:
-	for (unsigned cycle_no = 0; __atomic_load_n(&lock->lock_taken, __ATOMIC_RELAXED) && cycle_no < TTAS_CYCLES_TO_SPIN; ++cycle_no)
+	for (unsigned cycle_no = 0; __atomic_load_n(&lock->lock_taken, __ATOMIC_SEQ_CST) && cycle_no < TTAS_CYCLES_TO_SPIN; ++cycle_no)
 	{
 		spinloop_pause();
 	}
@@ -82,7 +82,7 @@ void TTAS_acquire(struct TTAS_Lock* lock)
 	// Perform exponential backoff:
 	while (1)
 	{
-		if (__atomic_load_n(&lock->lock_taken, __ATOMIC_RELAXED))
+		if (__atomic_load_n(&lock->lock_taken, __ATOMIC_SEQ_CST))
 		{
 			struct timespec to_sleep = {
 				.tv_sec  = 0,
