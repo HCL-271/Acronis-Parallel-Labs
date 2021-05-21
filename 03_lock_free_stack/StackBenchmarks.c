@@ -16,7 +16,7 @@
 #include <time.h>
 
 //-------------------------
-// Benchmark configuration
+// Benchmark configuration 
 //-------------------------
 
 // Common properties:
