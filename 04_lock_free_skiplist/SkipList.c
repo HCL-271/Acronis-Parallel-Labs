@@ -242,7 +242,7 @@ void add_to_reclaim_list(struct SkipList* skiplist, struct Tower* to_reclaim, un
 
 		__atomic_store_n(&to_reclaim->reclaim_next, reclaim_head, __ATOMIC_RELAXED);
 	}
-	while (!__atomic_compare_exchange_n(&skiplist->reclaim_lists[epoch], &reclaim_head, to_reclaim->reclaim_next,
+	while (!__atomic_compare_exchange_n(&skiplist->reclaim_lists[epoch], &reclaim_head, to_reclaim,
 	                                    STRONG, __ATOMIC_RELEASE, __ATOMIC_RELAXED));
 
 	__atomic_fetch_add(&skiplist->num_reclaimed, 1, __ATOMIC_RELAXED);

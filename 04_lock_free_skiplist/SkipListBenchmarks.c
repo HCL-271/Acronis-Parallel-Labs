@@ -16,14 +16,14 @@
 //-------------------------
 
 // Common properties:
-const unsigned MAX_THREADS = 64;
+const unsigned MAX_THREADS = 256;
 
 // Correctness benchmark:
 const int        CORRECTNESS_NUM_ELEMENTS = 100;
-const int INSERT_PERFORMANCE_NUM_ELEMENTS = 1000;
-const int REMOVE_PERFORMANCE_NUM_ELEMENTS = 1000;
-const int SEARCH_PERFORMANCE_NUM_ELEMENTS = 1000;
-const int  MIXED_PERFORMANCE_NUM_ELEMENTS = 1000;
+const int INSERT_PERFORMANCE_NUM_ELEMENTS = 10000;
+const int REMOVE_PERFORMANCE_NUM_ELEMENTS = 10000;
+const int SEARCH_PERFORMANCE_NUM_ELEMENTS = 10000;
+const int  MIXED_PERFORMANCE_NUM_ELEMENTS = 10000;
 
 //--------
 // Colors 
@@ -145,7 +145,7 @@ void run_test(unsigned num_to_push, void* (*one_thread_job)(void* args),
 	}
 
 	// Benchmarking process:
-	for (size_t num_threads = 4	; num_threads <= MAX_THREADS; num_threads += 4)
+	for (size_t num_threads = 8; num_threads <= MAX_THREADS; num_threads += 8)
 	{
 		// Prepare the arguments:
 		common_args->num_threads = num_threads;
@@ -248,12 +248,12 @@ void correctness_test_printout(struct CommonThreadArgs* common_args, struct Thre
 	{
 		if (!thread_args[thread_i].executed_correctly)
 		{
-			printf(YELLOW "The test for %02d threads is " RED "FAILED\n" RESET, common_args->num_threads);
+			printf(YELLOW "The test for %03d threads is " RED "FAILED\n" RESET, common_args->num_threads);
 			return;
 		}
 	}
 
-	printf(YELLOW "The test for %02d threads is " GREEN "PASSED\n" RESET, common_args->num_threads);
+	printf(YELLOW "The test for %03d threads is " GREEN "PASSED\n" RESET, common_args->num_threads);
 }
 
 void run_test_correctness()
@@ -290,7 +290,7 @@ void performance_test_printout(struct CommonThreadArgs* common_args, struct Thre
 
 	average /= common_args->num_threads;
 
-	printf(YELLOW "%02d, " GREEN "%8f\n" RESET, common_args->num_threads, average);
+	printf(YELLOW "%03d, " GREEN "%8f\n" RESET, common_args->num_threads, average);
 }
 
 void run_test_insert_performance()
