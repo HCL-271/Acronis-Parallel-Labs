@@ -8,8 +8,8 @@
 // Types and constants 
 //---------------------
 
-typedef int  Key_t;
-typedef int  Value_t;
+typedef long Key_t;
+typedef long Value_t;
 typedef char bool;
 
 struct SkipList;
@@ -35,9 +35,11 @@ int skiplist_search(struct SkipList* skiplist, Key_t search_key, Value_t* value_
 
 enum SkiplistErrno
 {
-	NO_ERROR         = 0,
-	NO_MEMORY        = 1,
-	NO_ELEMENT       = 2
+	NO_ERROR           = 0,
+	NO_MEMORY          = 1,
+	NO_THREADS         = 2,
+	NO_ELEMENT         = 3,
+	THREAD_LOCAL_ERROR = 4
 };
 
 int  skiplist_get_errno  (struct SkipList* skiplist);

@@ -28,6 +28,9 @@
 // - Search for N elements
 // - Remove N elements
 // Result is the average time
+//------------------------------------------------
+// Benchmark #6: Aggressive performance
+// 90% insertions, 10% searches, 1% removals
 //================================================
 
 void run_test_correctness();
@@ -35,3 +38,4 @@ void run_test_insert_performance();
 void run_test_remove_performance();
 void run_test_search_performance();
 void run_test_mixed_performance();
+void run_test_aggressive_performance();

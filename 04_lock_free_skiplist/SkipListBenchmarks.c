@@ -16,14 +16,15 @@
 //-------------------------
 
 // Common properties:
-const unsigned MAX_THREADS = 256;
+const unsigned MAX_THREADS = 100;
 
 // Correctness benchmark:
-const int        CORRECTNESS_NUM_ELEMENTS = 100;
-const int INSERT_PERFORMANCE_NUM_ELEMENTS = 10000;
-const int REMOVE_PERFORMANCE_NUM_ELEMENTS = 10000;
-const int SEARCH_PERFORMANCE_NUM_ELEMENTS = 10000;
-const int  MIXED_PERFORMANCE_NUM_ELEMENTS = 10000;
+const int                CORRECTNESS_NUM_ELEMENTS = 100;
+const int         INSERT_PERFORMANCE_NUM_ELEMENTS = 10000;
+const int         REMOVE_PERFORMANCE_NUM_ELEMENTS = 10000;
+const int         SEARCH_PERFORMANCE_NUM_ELEMENTS = 10000;
+const int          MIXED_PERFORMANCE_NUM_ELEMENTS = 3333;
+const int AGGRESIVE_PERFORMANCE_TEST_NUM_CYCLES   = 100;
 
 //--------
 // Colors 
@@ -145,7 +146,7 @@ void run_test(unsigned num_to_push, void* (*one_thread_job)(void* args),
 	}
 
 	// Benchmarking process:
-	for (size_t num_threads = 8; num_threads <= MAX_THREADS; num_threads += 8)
+	for (size_t num_threads = 1; num_threads <= MAX_THREADS; num_threads += 1)
 	{
 		// Prepare the arguments:
 		common_args->num_threads = num_threads;
@@ -215,7 +216,7 @@ void* correctness_thread_job(void* args)
 
 		if (retval == -1 || value != key)
 		{
-			printf("Not found key: %d\n", key);
+			printf("Not found key: %ld\n", key);
 			thread_args->executed_correctly = 0;
 		}
 	}
@@ -232,7 +233,7 @@ void* correctness_thread_job(void* args)
 
 		if (retval != -1 || value != 0)
 		{
-			printf("Incorrectly found key: %d\n", key);
+			printf("Incorrectly found key: %ld\n", key);
 			thread_args->executed_correctly = 0;
 		}
 	}
@@ -369,4 +370,46 @@ void run_test_mixed_performance()
 	run_test(0, &mixed_performance_thread_job, &performance_test_printout);
 }
 
+//-----------------------
+// Aggresive performance 
+//-----------------------
+
+void* aggressive_performance_thread_job(void* args)
+{
+	struct ThreadArgs*       thread_args = (struct ThreadArgs*) args;
+	struct CommonThreadArgs* common_args = thread_args->common_args;
+
+	START_TIME_MEASUREMENT();
+
+	for (int cycle = 0; cycle < AGGRESIVE_PERFORMANCE_TEST_NUM_CYCLES; ++cycle)
+	{
+		for (unsigned i = 0; i < 90; ++i)
+		{
+			Key_t   key   = common_args->num_threads * (AGGRESIVE_PERFORMANCE_TEST_NUM_CYCLES * cycle + thread_args->thread_i) + i;
+			Value_t value = key;
+
+			skiplist_insert(common_args->skiplist, key, value);
+		}
+
+		for (unsigned i = 0; i < 9; ++i)
+		{
+			Key_t   key   = common_args->num_threads * (AGGRESIVE_PERFORMANCE_TEST_NUM_CYCLES * cycle + thread_args->thread_i + 1) + i;
+			Value_t value = 0;
+
+			skiplist_search(common_args->skiplist, key, &value);
+		}
+
+		Key_t to_remove = common_args->num_threads * (AGGRESIVE_PERFORMANCE_TEST_NUM_CYCLES * cycle + thread_args->thread_i);
+		skiplist_remove(common_args->skiplist, to_remove);
+	}   
+
+	FINISH_TIME_MEASUREMENT();
+
+	return NULL;
+}
+
+void run_test_aggressive_performance()
+{
+	run_test(0, &aggressive_performance_thread_job, &performance_test_printout);
+}
 

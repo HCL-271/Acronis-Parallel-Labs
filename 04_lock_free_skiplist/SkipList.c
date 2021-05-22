@@ -7,6 +7,7 @@
 #include "SkipList.h"
 
 #include <limits.h>
+#include <pthread.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -25,10 +26,9 @@ const bool WEAK   = 1;
 const bool STRONG = 0; 
 
 // Performance constants:
-#define NUM_LEVELS 16
-#define NUM_EPOCHS  4
-
-const unsigned CHANGE_EPOCH_VALUE = 50;
+#define MAX_THREADS 256
+#define NUM_LEVELS   16
+#define NUM_EPOCHS    4
 
 //-----------------
 // Tagged pointers
@@ -56,19 +56,23 @@ struct Tower
 
 struct SkipList
 {
+	// Thread-local storage:
+	pthread_key_t thread_local_key;
+
+	// Skiplist search optimization:
 	volatile unsigned max_level;
 
+	// Error-checking:
 	int errno;
 
 	// Reclamation management:
 	volatile struct Tower* reclaim_lists[NUM_EPOCHS];
 
 	volatile bool reclaim_lock;
-	volatile unsigned num_reclaimed;
-	volatile unsigned epoch_visitors[NUM_EPOCHS];
-	volatile unsigned epoch_head;
-	volatile unsigned epoch_tail;
+	volatile char global_epoch;
+	volatile char local_epochs[MAX_THREADS];
 
+	// Data:
 	struct Tower header;
 };
 
@@ -86,20 +90,25 @@ int skiplist_init(struct SkipList** skiplist_ptr)
 
 	struct SkipList* skiplist = *skiplist_ptr;
 
+	// Thread local storage for local epochs:
+	if (pthread_key_create(&skiplist->thread_local_key, NULL) != 0)
+	{
+		skiplist->errno = THREAD_LOCAL_ERROR;
+		return -1;
+	}
+
 	skiplist->max_level = 0;
 	skiplist->errno     = NO_ERROR;
 
 	// Initialize reclamation parameters: 
 	for (unsigned epoch = 0; epoch < NUM_EPOCHS; ++epoch)
 	{
-		skiplist->reclaim_lists [epoch] = NULL;
-		skiplist->epoch_visitors[epoch] = 0;
+		skiplist->reclaim_lists[epoch] = NULL;
+		skiplist->local_epochs[epoch]  = -1;
 	}
 
-	skiplist->reclaim_lock  = 0;
-	skiplist->num_reclaimed = 0;
-	skiplist->epoch_head    = 0;
-	skiplist->epoch_tail    = 0;
+	skiplist->reclaim_lock = 0;
+	skiplist->global_epoch = 0;
 
 	// Initialize header tower:
 	skiplist->header.key          = KEY_MIN;
@@ -144,6 +153,9 @@ int skiplist_free(struct SkipList* skiplist)
 			to_delete = next;
 		}
 	}
+
+	// Delete thread-local storage key:
+	pthread_key_delete(skiplist->thread_local_key);
 
 	free(skiplist);
 
@@ -217,18 +229,55 @@ void fill_tables(struct SkipList* skiplist, struct Tower** preds, struct Tower**
 // Reclamation management 
 //------------------------
 
-unsigned enter_epoch(struct SkipList* skiplist)
-{	
-	unsigned epoch = __atomic_load_n(&skiplist->epoch_head, __ATOMIC_RELAXED);
+char* epoch_init(struct SkipList* skiplist)
+{
+	char global_epoch = __atomic_load_n(&skiplist->global_epoch, __ATOMIC_RELAXED);
 
-	__atomic_fetch_add(&skiplist->epoch_visitors[epoch], 1, __ATOMIC_RELAXED);
+	char previous = -1;
 
-	return epoch;
+	// Allocate the cell in the local epoch list:
+	for (unsigned cell = 0; cell < MAX_THREADS; ++cell)
+	{
+		if (__atomic_compare_exchange_n(&skiplist->local_epochs[cell], &previous, global_epoch, STRONG, __ATOMIC_RELEASE, __ATOMIC_RELAXED))
+		{
+			return (char*) &skiplist->local_epochs[cell];
+		}
+	}
+
+	skiplist->errno = NO_THREADS;
+	return NULL;
 }
 
-void leave_epoch(struct SkipList* skiplist, unsigned epoch)
+char enter_epoch(struct SkipList* skiplist)
+{	
+	char* local_epoch = (char*) pthread_getspecific(skiplist->thread_local_key);
+
+	if (local_epoch == NULL)
+	{
+		local_epoch = epoch_init(skiplist);
+
+		if (local_epoch == NULL) return -1;
+
+		if (pthread_setspecific(skiplist->thread_local_key, local_epoch) == -1)
+		{
+			skiplist->errno = THREAD_LOCAL_ERROR;
+			return -1;
+		}
+	}
+
+	return *local_epoch;
+}
+
+void leave_epoch(struct SkipList* skiplist, char epoch)
 {
-	__atomic_fetch_sub(&skiplist->epoch_visitors[epoch], 1, __ATOMIC_RELAXED);
+	char* local_epoch = (char*) pthread_getspecific(skiplist->thread_local_key);
+
+	char global_epoch = __atomic_load_n(&skiplist->global_epoch, __ATOMIC_RELAXED);
+
+	if (*local_epoch != global_epoch)
+	{
+		__atomic_store_n(local_epoch, (*local_epoch + 1) % NUM_EPOCHS, __ATOMIC_RELAXED);
+	}
 }
 
 void add_to_reclaim_list(struct SkipList* skiplist, struct Tower* to_reclaim, unsigned epoch)
@@ -244,9 +293,6 @@ void add_to_reclaim_list(struct SkipList* skiplist, struct Tower* to_reclaim, un
 	}
 	while (!__atomic_compare_exchange_n(&skiplist->reclaim_lists[epoch], &reclaim_head, to_reclaim,
 	                                    STRONG, __ATOMIC_RELEASE, __ATOMIC_RELAXED));
-
-	__atomic_fetch_add(&skiplist->num_reclaimed, 1, __ATOMIC_RELAXED);
-
 }
 
 void reclaim_nodes(struct SkipList* skiplist)
@@ -259,26 +305,26 @@ void reclaim_nodes(struct SkipList* skiplist)
 	}
 
 	// Move the current epoch if possible:
-	unsigned epoch_now  = __atomic_load_n(&skiplist->epoch_head, __ATOMIC_RELAXED);
+	char global_epoch = __atomic_load_n(&skiplist->global_epoch, __ATOMIC_RELAXED);
 
-	if (__atomic_load_n(&skiplist->num_reclaimed, __ATOMIC_RELAXED) >= CHANGE_EPOCH_VALUE)
+	bool change_epoch = TRUE;
+	for (unsigned thr_i = 0; thr_i < MAX_THREADS; ++thr_i)
 	{
-		__atomic_store_n(&skiplist->num_reclaimed, 0, __ATOMIC_RELAXED);
+		char epoch = __atomic_load_n(&skiplist->local_epochs[thr_i], __ATOMIC_RELAXED);
 
-		epoch_now = (epoch_now + 1) % NUM_EPOCHS;
-
-		__atomic_store_n(&skiplist->epoch_head, epoch_now, __ATOMIC_RELAXED);
+		if (epoch != global_epoch)
+		{
+			change_epoch = FALSE;
+			break;
+		}
 	}
 
-	// Check last epoch visitors:
-	unsigned epoch_last = __atomic_load_n(&skiplist->epoch_tail, __ATOMIC_RELAXED);
-	
-	unsigned visitors = __atomic_load_n(&skiplist->epoch_visitors[epoch_last], __ATOMIC_RELAXED);
-
-	// Perform reclamation: 
-	if (visitors == 0 && epoch_now != epoch_last)
+	// Perform reclamation:
+	if (change_epoch)
 	{
-		struct Tower* reclaim_head = (struct Tower*) __atomic_exchange_n(&skiplist->reclaim_lists[epoch_last], NULL, __ATOMIC_RELAXED);
+		unsigned reclaim_epoch = (global_epoch + NUM_EPOCHS - 2) % NUM_EPOCHS;
+
+		struct Tower* reclaim_head = (struct Tower*) __atomic_exchange_n(&skiplist->reclaim_lists[reclaim_epoch], NULL, __ATOMIC_RELAXED);
 
 		while (reclaim_head != NULL)
 		{
@@ -289,9 +335,9 @@ void reclaim_nodes(struct SkipList* skiplist)
 			free(to_be_freed);
 		}
 
-		unsigned epoch_next = (epoch_last + 1) % NUM_EPOCHS;
+		unsigned epoch_next = (global_epoch + 1) % NUM_EPOCHS;
 
-		__atomic_store_n(&skiplist->epoch_tail, epoch_next, __ATOMIC_RELAXED);
+		__atomic_store_n(&skiplist->global_epoch, epoch_next, __ATOMIC_RELAXED);
 	}
 
 	// Free the reclamation lock:

@@ -28,5 +28,8 @@ int main()
 	printf(CYAN "Mixed performance test:\n" RESET);
 	run_test_mixed_performance();
 
+	printf(CYAN "Aggressive performance test:\n" RESET);
+	run_test_aggressive_performance();
+
 	return EXIT_SUCCESS;
 }
